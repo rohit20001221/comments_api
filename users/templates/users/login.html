@@ -1,0 +1,6 @@
+<form method="post">{% csrf_token %}
+  {{form.as_p}}
+  <input type="submit" name="" value="login">
+  <strong>OR</strong>
+  <a href="{% url 'social:begin' 'github' %}">Login with GitHub</a><br>
+</form>

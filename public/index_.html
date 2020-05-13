@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script src="https://cdn.ckeditor.com/4.14.0/basic/ckeditor.js"></script>
+  </head>
+  <body>
+    <form method="post" onsubmit="loginUser(event)" id="login-form">
+      <input type="text" name="username" id="username" value="" placeholder="username"><br>
+      <input type="text" name="password" id="password" value="" placeholder="password"><br>
+      <input type="submit" name="" value="login">
+    </form>
+
+    <ul id='comments-section'>
+
+    </ul>
+
+    <form onsubmit="postComment(event)" hidden id='comment-form' method="post">
+      <textarea name="comment-content" id="comment-content"></textarea>
+      <input type="submit" name="" value="comment">
+    </form>
+
+
+    <script>
+
+      var editor;
+      let headers = new Headers()
+      // headers.append("Authorization": "Token <TOKEN_FROM_LOCAL_STORAGE>")
+
+
+      document.addEventListener('DOMContentLoaded', function(){
+        editor = CKEDITOR.replace('comment-content', {});
+        fetch('http://127.0.0.1:8000/api/47440760824c8fb68b7811eaad93a1b50f58888c/comments').then(res => {
+          if(!res.ok){
+            throw new Error("something went worng");
+          }
+
+          return res.json();
+        }).then(data => {
+          data.forEach((item, i) => {
+            let li = document.createElement('li');
+            let div = document.createElement('div');
+            div.innerHTML = `(${item.user}) ` + item.comment;
+            li.append(div);
+
+            let ol = document.createElement('ol');
+            item.sub_comments_set.forEach((item_, i_) => {
+              let li_ = document.createElement('li');
+              li_.innerHTML = `(${item_.user}) ` + item_.comment;
+              ol.append(li_);
+            });
+            li.append(ol);
+            document.getElementById('comments-section').append(li);
+          });
+
+        }).catch(err => {
+          console.log(err);
+        })
+      });
+
+      function postComment(event){
+        event.preventDefault();
+        let comment = editor.getData();
+        let fd = new FormData();
+        fd.append("comment", comment);
+        fetch('http://127.0.0.1:8000/api/47440760824c8fb68b7811eaad93a1b50f58888c/comments', {
+          method : 'POST',
+          body : fd,
+          headers : headers
+        }).then((res) => {
+          if(res.ok){
+            return res.json();
+          }else{
+            throw new Error("something went wrong");
+          }
+        }).then(data => {
+          console.log(data);
+        }).catch(err => {
+          console.log(err);
+        })
+      }
+
+      function loginUser(event){
+        event.preventDefault();
+        let username = document.getElementById('username').value;
+        let password = document.getElementById('password').value;
+
+        // console.log(username);
+        // console.log(password);
+
+        let fd = new FormData();
+        fd.append('username', username);
+        fd.append('password', password);
+
+        fetch('http://127.0.0.1:8000/api-token-auth/', {
+          method : 'POST',
+          body : fd,
+        }).then((res) => {
+          if(!res.ok){
+            throw new Error("something went wrong");
+          }
+          return res.json();
+        })
+        .then((data)=>{
+          if(data){
+            console.log(data);
+            headers.append("Authorization", `Token ${data.token}`)
+            document.getElementById('login-form').hidden = true;
+            document.getElementById('comment-form').hidden = false;
+          }
+        }).catch(err => {
+          console.log(err);
+        });
+      }
+    </script>
+  </body>
+</html>
